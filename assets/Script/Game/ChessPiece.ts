@@ -199,8 +199,8 @@ export class ChessPiece extends Component {
 
   private calculateValidPath() {
     let tmpResult = [];
-    let eRange = [];
-    let nRange = [];
+    let eRange: string[] = [];
+    let nRange: string[] = [];
     let eStop = false;
     let nStop = false;
     switch (this.chessId) {
@@ -236,7 +236,35 @@ export class ChessPiece extends Component {
         this.chessSprite.spriteFrame = this.chessImgMaps[1];
         break;
       case ChessIdEnum.Bishop:
-        this.chessSprite.spriteFrame = this.chessImgMaps[2];
+        eRange = Array.from({ length: 8 }, (v, i) =>
+          String.fromCharCode(i + 97)
+        );
+        nRange = Array.from({ length: 8 }, (v, i) => `${i + 1}`);
+
+        eRange.forEach((e, i) => {
+          if (!this.comparePosition(this.position, `${e}${this.nPos}`)) {
+            const selfEIdx = eRange.indexOf(this.ePos);
+            const selfNIdx = nRange.indexOf(this.nPos);
+            const targetN = [
+              i - selfEIdx + selfNIdx + 1,
+              selfEIdx - i + selfNIdx + 1,
+            ];
+            targetN.forEach((n) => {
+              if (nRange.includes(`${n}`)) {
+                if (
+                  !eStop &&
+                  !Board.instance.node
+                    .getChildByPath(`${n}/${e}`)
+                    .getComponentInChildren(ChessPiece)?.isSelf
+                ) {
+                  tmpResult.push(`${e}${n}`);
+                } else {
+                  eStop = true;
+                }
+              }
+            });
+          }
+        });
         break;
       case ChessIdEnum.Knight:
         this.chessSprite.spriteFrame = this.chessImgMaps[3];
@@ -245,7 +273,7 @@ export class ChessPiece extends Component {
         eRange = Array.from({ length: 8 }, (v, i) =>
           String.fromCharCode(i + 97)
         );
-        nRange = Array.from({ length: 8 }, (v, i) => i + 1);
+        nRange = Array.from({ length: 8 }, (v, i) => `${i + 1}`);
 
         eRange.forEach((e) => {
           if (!this.comparePosition(this.position, `${e}${this.nPos}`)) {
@@ -277,7 +305,47 @@ export class ChessPiece extends Component {
         });
         break;
       case ChessIdEnum.Pawn:
-        this.chessSprite.spriteFrame = this.chessImgMaps[5];
+        eRange = [this.ePos];
+        if (this.ePos.charCodeAt(0) > 97)
+          eRange.push(String.fromCharCode(this.ePos.charCodeAt(0) - 1));
+        if (this.ePos.charCodeAt(0) < 104)
+          eRange.push(String.fromCharCode(this.ePos.charCodeAt(0) + 1));
+
+        if (this.isSelf) {
+          if (Number(this.nPos) < 8) {
+            nRange = [`${Number(this.nPos) + 1}`];
+          }
+        } else {
+          if (Number(this.nPos) > 1) {
+            nRange = [`${Number(this.nPos) - 1}`];
+          }
+        }
+
+        if (nRange.length) {
+          eRange.forEach((e) => {
+            console.log(this.ePos, e);
+            if (this.ePos === e) {
+              if (
+                Board.instance.node
+                  .getChildByPath(`${nRange[0]}/${this.ePos}`)
+                  .getComponentInChildren(ChessPiece) === null
+              ) {
+                tmpResult.push(`${this.ePos}${nRange[0]}`);
+              }
+            } else {
+              if (
+                Board.instance.node
+                  .getChildByPath(`${nRange[0]}/${this.ePos}`)
+                  .getComponentInChildren(ChessPiece) &&
+                !Board.instance.node
+                  .getChildByPath(`${nRange[0]}/${this.ePos}`)
+                  .getComponentInChildren(ChessPiece).isSelf
+              ) {
+                tmpResult.push(`${this.ePos}${nRange[0]}`);
+              }
+            }
+          });
+        }
         break;
     }
     this.validPath = tmpResult.slice();
