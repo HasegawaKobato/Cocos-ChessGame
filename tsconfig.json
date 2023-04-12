@@ -1,0 +1,12 @@
+{
+  /* Base configuration. Do not edit this field. */
+  "extends": "./temp/tsconfig.cocos.json",
+
+  /* Add your custom configuration here. */
+  "compilerOptions": {
+    "strict": false,
+    "target": "es2021",
+    "lib": ["es2021", "es2017", "es2015", "dom"],
+    "resolveJsonModule": true
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "self": [
+    {
+      "id": "Pawn",
+      "pos": "a2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "b2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "c2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "d2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "e2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "f2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "g2"
+    },
+    {
+      "id": "Pawn",
+      "pos": "h2"
+    },
+    {
+      "id": "Rook",
+      "pos": "a1"
+    },
+    {
+      "id": "Rook",
+      "pos": "h1"
+    },
+    {
+      "id": "Knight",
+      "pos": "b1"
+    },
+    {
+      "id": "Knight",
+      "pos": "g1"
+    },
+    {
+      "id": "Bishop",
+      "pos": "c1"
+    },
+    {
+      "id": "Bishop",
+      "pos": "f1"
+    },
+    {
+      "id": "Queen",
+      "pos": "d1"
+    },
+    {
+      "id": "King",
+      "pos": "e1"
+    }
+  ],
+  "enemy": [
+    {
+      "id": "Pawn",
+      "pos": "a7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "b7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "c7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "d7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "e7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "f7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "g7"
+    },
+    {
+      "id": "Pawn",
+      "pos": "h7"
+    },
+    {
+      "id": "Rook",
+      "pos": "a8"
+    },
+    {
+      "id": "Rook",
+      "pos": "h8"
+    },
+    {
+      "id": "Knight",
+      "pos": "b8"
+    },
+    {
+      "id": "Knight",
+      "pos": "g8"
+    },
+    {
+      "id": "Bishop",
+      "pos": "c8"
+    },
+    {
+      "id": "Bishop",
+      "pos": "f8"
+    },
+    {
+      "id": "Queen",
+      "pos": "d8"
+    },
+    {
+      "id": "King",
+      "pos": "e8"
+    }
+  ]
+}
