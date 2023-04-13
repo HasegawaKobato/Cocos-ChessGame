@@ -3,6 +3,7 @@ import {
   Color,
   Component,
   Enum,
+  Layout,
   Material,
   Node,
   Sprite,
@@ -112,6 +113,18 @@ export class ChessPiece extends Component {
     this.changeSpriteColor();
   }
 
+  @property
+  private _isDead: boolean = false;
+  @property
+  public get isDead() {
+    return this._isDead;
+  }
+  public set isDead(v: boolean) {
+    this._isDead = v;
+  }
+
+  public deadArea: Node = null;
+
   private get ePos(): string {
     return this.position.match(/\D/g)?.[0];
   }
@@ -126,9 +139,8 @@ export class ChessPiece extends Component {
     this._validPath = v.slice();
     Event.event.emit(EventType.SHOW_VALIDPATH, v.slice());
   }
-  private set validPathWithoutNotify(v: string[]) {
-    this._validPath = v.slice();
-  }
+
+  private steps: string[] = [];
 
   onLoad() {
     this.node.on(Node.EventType.TOUCH_END, this.onSelectChess, this);
@@ -214,6 +226,19 @@ export class ChessPiece extends Component {
     if (this.selectedNode.active) {
       if (this.validPath.includes(target) && this.role === GameModel.role) {
         this.position = target;
+        this.steps.push(target);
+        if (!this.isSelf(p2d(target).e, p2d(target).n)) {
+          const enemyPiece = Board.instance.node
+            .getChildByPath(`${p2d(target).n}/${p2d(target).e}`)
+            .getComponentInChildren(ChessPiece);
+          Event.event.emit(EventType.KILLED, this.role, enemyPiece.node);
+        }
+
+        if (this.chessId === ChessIdEnum.Pawn) {
+          if (this.role === GameModel.role && Number(this.nPos) === 8) {
+            Event.event.emit(EventType.SELECT_PAWN_CHANGE, this);
+          }
+        }
       }
       this.validPath = [];
     }
@@ -254,7 +279,7 @@ export class ChessPiece extends Component {
         eRange.forEach((e) => {
           nRange.forEach((n) => {
             if (!this.comparePosition(this.position, `${e}${n}`)) {
-              if (!this.isSelf(e, n)) {
+              if (!this.isSelfWithSelected(e, n)) {
                 tmpResult.push(`${e}${n}`);
               }
             }
@@ -330,13 +355,13 @@ export class ChessPiece extends Component {
         const tmpQueenDirectPath = [al, lt, at, rt, ar, rb, ab, lb];
         queenStops.forEach((stops, i) => {
           tmpQueenDirectPath[i].forEach((path) => {
-            if (!stops && !this.isSelf(p2d(path).e, p2d(path).n)) {
+            if (!stops && !this.isSelfWithSelected(p2d(path).e, p2d(path).n)) {
               tmpResult.push(`${p2d(path).e}${p2d(path).n}`);
               if (
                 Board.instance.node
                   .getChildByPath(`${p2d(path).n}/${p2d(path).e}`)
                   .getComponentInChildren(ChessPiece) &&
-                !this.isSelf(p2d(path).e, p2d(path).n)
+                !this.isSelfWithSelected(p2d(path).e, p2d(path).n)
               ) {
                 stops = true;
               }
@@ -397,13 +422,13 @@ export class ChessPiece extends Component {
         const tmpDirectPath = [lt, lb, rt, rb];
         bishopStops.forEach((stops, i) => {
           tmpDirectPath[i].forEach((path) => {
-            if (!stops && !this.isSelf(p2d(path).e, p2d(path).n)) {
+            if (!stops && !this.isSelfWithSelected(p2d(path).e, p2d(path).n)) {
               tmpResult.push(`${p2d(path).e}${p2d(path).n}`);
               if (
                 Board.instance.node
                   .getChildByPath(`${p2d(path).n}/${p2d(path).e}`)
                   .getComponentInChildren(ChessPiece) &&
-                !this.isSelf(p2d(path).e, p2d(path).n)
+                !this.isSelfWithSelected(p2d(path).e, p2d(path).n)
               ) {
                 stops = true;
               }
@@ -470,7 +495,7 @@ export class ChessPiece extends Component {
           tmpKnightPath.push(`${eRange[selfEIdx - 2]}${Number(this.nPos) - 1}`);
         }
         tmpKnightPath.forEach((path) => {
-          if (!this.isSelf(p2d(path).e, p2d(path).n)) {
+          if (!this.isSelfWithSelected(p2d(path).e, p2d(path).n)) {
             tmpResult.push(`${p2d(path).e}${p2d(path).n}`);
           }
         });
@@ -512,13 +537,13 @@ export class ChessPiece extends Component {
         const tmpRookDirectPath = [al, at, ar, ab];
         rookStops.forEach((stops, i) => {
           tmpRookDirectPath[i].forEach((path) => {
-            if (!stops && !this.isSelf(p2d(path).e, p2d(path).n)) {
+            if (!stops && !this.isSelfWithSelected(p2d(path).e, p2d(path).n)) {
               tmpResult.push(`${p2d(path).e}${p2d(path).n}`);
               if (
                 Board.instance.node
                   .getChildByPath(`${p2d(path).n}/${p2d(path).e}`)
                   .getComponentInChildren(ChessPiece) &&
-                !this.isSelf(p2d(path).e, p2d(path).n)
+                !this.isSelfWithSelected(p2d(path).e, p2d(path).n)
               ) {
                 stops = true;
               }
@@ -565,7 +590,7 @@ export class ChessPiece extends Component {
                 Board.instance.node
                   .getChildByPath(`${nRange[0]}/${e}`)
                   .getComponentInChildren(ChessPiece) &&
-                !this.isSelf(e, nRange[0])
+                !this.isSelfWithSelected(e, nRange[0])
               ) {
                 tmpResult.push(`${e}${nRange[0]}`);
               }
@@ -582,7 +607,6 @@ export class ChessPiece extends Component {
         break;
     }
     this.validPath = tmpResult.slice();
-    console.log(this.validPath);
   }
 
   private comparePosition(source: string, target: string) {
@@ -601,11 +625,19 @@ export class ChessPiece extends Component {
     return Number(n) > 0 && Number(n) < 9;
   }
 
-  private isSelf(e: string, n: string | number) {
+  private isSelfWithSelected(e: string, n: string | number) {
     return (
       Board.instance.node
         .getChildByPath(`${n}/${e}`)
         .getComponentInChildren(ChessPiece)?.role === GameModel.selectedRole
+    );
+  }
+
+  private isSelf(e: string, n: string | number) {
+    return (
+      Board.instance.node
+        .getChildByPath(`${n}/${e}`)
+        .getComponentInChildren(ChessPiece)?.role === GameModel.role
     );
   }
 }

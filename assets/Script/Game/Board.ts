@@ -5,11 +5,13 @@ import {
   find,
   instantiate,
   JsonAsset,
+  Layout,
   Material,
   Node,
   NodePool,
   Prefab,
   Sprite,
+  Vec3,
 } from "cc";
 import { ChessPosition } from "./ChessPosition";
 import {
@@ -20,7 +22,7 @@ import {
   p2d,
 } from "./ChessPiece";
 import Event, { EventType } from "./Event";
-import GameModel from "../Model/GameModel";
+import GameModel, { RoleEnum } from "../Model/GameModel";
 const { ccclass, property, executeInEditMode } = _decorator;
 
 interface IChessData {
@@ -41,6 +43,12 @@ export class Board extends Component {
 
   @property(Material)
   private validMaterial: Material = null;
+
+  @property(Node)
+  private selfDeadNode: Node = null;
+
+  @property(Node)
+  private enemyDeadNode: Node = null;
 
   @property([Color])
   private _cellColors: Color[] = [new Color()];
@@ -67,6 +75,7 @@ export class Board extends Component {
     // this.updateCellColor();
     Board.instance = this;
     Event.event.on(EventType.SHOW_VALIDPATH, this.onShowValidPath, this);
+    Event.event.on(EventType.KILLED, this.onKill, this);
   }
 
   start() {}
@@ -152,6 +161,14 @@ export class Board extends Component {
         node.getComponent(ChessPiece).position = d.pos;
       });
     }, 0);
+  }
+
+  private onKill(role: RoleEnum, node: Node) {
+    node.setParent(
+      role === RoleEnum.A ? this.selfDeadNode : this.enemyDeadNode
+    );
+    this.enemyDeadNode.getComponent(Layout).updateLayout();
+    this.selfDeadNode.getComponent(Layout).updateLayout();
   }
 
   private getChessNode(): Node {
