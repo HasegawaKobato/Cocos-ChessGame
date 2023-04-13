@@ -5,6 +5,7 @@ import {
   find,
   instantiate,
   JsonAsset,
+  Material,
   Node,
   NodePool,
   Prefab,
@@ -16,7 +17,10 @@ import {
   chessIdStrToEnum,
   ChessIdToName,
   ChessPiece,
+  p2d,
 } from "./ChessPiece";
+import Event, { EventType } from "./Event";
+import GameModel from "../Model/GameModel";
 const { ccclass, property, executeInEditMode } = _decorator;
 
 interface IChessData {
@@ -34,6 +38,9 @@ interface IInitData {
 export class Board extends Component {
   @property(JsonAsset)
   public chessInitJsonAsset: JsonAsset = null;
+
+  @property(Material)
+  private validMaterial: Material = null;
 
   @property([Color])
   private _cellColors: Color[] = [new Color()];
@@ -59,6 +66,7 @@ export class Board extends Component {
   onLoad() {
     // this.updateCellColor();
     Board.instance = this;
+    Event.event.on(EventType.SHOW_VALIDPATH, this.onShowValidPath, this);
   }
 
   start() {}
@@ -68,6 +76,17 @@ export class Board extends Component {
       this.initBoard = false;
       this.initBoardChess();
     }
+  }
+
+  private onShowValidPath(v: string[]) {
+    this.getComponentsInChildren(Sprite).forEach(
+      (c) => (c.customMaterial = null)
+    );
+    v.forEach((path) => {
+      this.node
+        .getChildByPath(`${p2d(path).n}/${p2d(path).e}`)
+        .getComponent(Sprite).customMaterial = this.validMaterial;
+    });
   }
 
   public updateCellColor() {
@@ -120,7 +139,7 @@ export class Board extends Component {
         node.active = true;
         node.name = d.id;
         node.getComponent(ChessPiece).chessId = chessIdStrToEnum(d.id);
-        node.getComponent(ChessPiece).isSelf = true;
+        node.getComponent(ChessPiece).role = GameModel.role;
         node.getComponent(ChessPiece).position = d.pos;
       });
       // 生成敵方方棋子
@@ -129,7 +148,7 @@ export class Board extends Component {
         node.active = true;
         node.name = d.id;
         node.getComponent(ChessPiece).chessId = chessIdStrToEnum(d.id);
-        node.getComponent(ChessPiece).isSelf = false;
+        node.getComponent(ChessPiece).role = GameModel.enemyRole;
         node.getComponent(ChessPiece).position = d.pos;
       });
     }, 0);

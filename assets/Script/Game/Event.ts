@@ -1,7 +1,9 @@
 import { EventTarget } from "cc";
 
 export enum EventType {
-  CLICK_POSITION = "clickPosition"
+  CLICK_POSITION = "clickPosition",
+  SHOW_VALIDPATH = "showValidPath",
+  CANCEL_SELECT = "cancelSelect"
 }
 
 export default class Event {
