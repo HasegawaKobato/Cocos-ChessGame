@@ -124,6 +124,7 @@ export class ChessPiece extends Component {
   }
 
   public deadArea: Node = null;
+  public steps: string[] = [];
 
   private get ePos(): string {
     return this.position.match(/\D/g)?.[0];
@@ -139,8 +140,6 @@ export class ChessPiece extends Component {
     this._validPath = v.slice();
     Event.event.emit(EventType.SHOW_VALIDPATH, v.slice());
   }
-
-  private steps: string[] = [];
 
   onLoad() {
     this.node.on(Node.EventType.TOUCH_END, this.onSelectChess, this);
@@ -224,21 +223,47 @@ export class ChessPiece extends Component {
 
   private toPosition(target: string) {
     if (this.selectedNode.active) {
-      if (this.validPath.includes(target) && this.role === GameModel.role) {
+      if (this.validPath.includes(target) && this.role === GameModel.turnRole) {
         this.position = target;
         this.steps.push(target);
-        if (!this.isSelf(p2d(target).e, p2d(target).n)) {
+        let isOver = false;
+        if (!this.isSelfWithSelected(p2d(target).e, p2d(target).n)) {
           const enemyPiece = Board.instance.node
             .getChildByPath(`${p2d(target).n}/${p2d(target).e}`)
             .getComponentInChildren(ChessPiece);
           Event.event.emit(EventType.KILLED, this.role, enemyPiece.node);
+
+          if (enemyPiece.chessId === ChessIdEnum.King) {
+            isOver = true;
+            Event.event.emit(EventType.GAME_OVER, this.role);
+          }
+        } else {
+          if (this.chessId === ChessIdEnum.King) {
+            if (target === "g1") {
+              if (
+                this.getChessFromPos("h1").chessId === ChessIdEnum.Rook &&
+                this.getChessFromPos("h1").steps.length === 0
+              ) {
+                this.getChessFromPos("h1").position = "f1";
+              }
+            } else if (target === "c1") {
+              if (
+                this.getChessFromPos("a1").chessId === ChessIdEnum.Rook &&
+                this.getChessFromPos("a1").steps.length === 0
+              ) {
+                this.getChessFromPos("a1").position = "d1";
+              }
+            }
+          }
         }
 
-        if (this.chessId === ChessIdEnum.Pawn) {
+        if (!isOver && this.chessId === ChessIdEnum.Pawn) {
           if (this.role === GameModel.role && Number(this.nPos) === 8) {
             Event.event.emit(EventType.SELECT_PAWN_CHANGE, this);
           }
         }
+
+        Event.event.emit(EventType.TURN);
       }
       this.validPath = [];
     }
@@ -285,6 +310,28 @@ export class ChessPiece extends Component {
             }
           });
         });
+
+        if (this.steps.length === 0) {
+          if (!this.getChessFromPos("f1") && !this.getChessFromPos("g1")) {
+            if (
+              this.getChessFromPos("h1").chessId === ChessIdEnum.Rook &&
+              this.getChessFromPos("h1").steps.length === 0
+            ) {
+              tmpResult.push("g1");
+            }
+          } else if (
+            !this.getChessFromPos("b1") &&
+            !this.getChessFromPos("c1") &&
+            !this.getChessFromPos("d1")
+          ) {
+            if (
+              this.getChessFromPos("a1").chessId === ChessIdEnum.Rook &&
+              this.getChessFromPos("a1").steps.length === 0
+            ) {
+              tmpResult.push("c1");
+            }
+          }
+        }
         break;
 
       /** ===========Completed========== */
@@ -555,6 +602,11 @@ export class ChessPiece extends Component {
         break;
 
       case ChessIdEnum.Pawn:
+        const eMap = Array.from({ length: 8 }, (v, i) =>
+          String.fromCharCode(i + 97)
+        );
+        selfEIdx = eMap.indexOf(this.ePos);
+
         eRange = [this.ePos];
         if (this.ePos.charCodeAt(0) > 97)
           eRange.push(String.fromCharCode(this.ePos.charCodeAt(0) - 1));
@@ -599,11 +651,48 @@ export class ChessPiece extends Component {
         }
 
         if (!tmpPawnStops) {
-          if (this.role === GameModel.role && Number(this.nPos) === 2) {
-            tmpResult.push(`${this.ePos}4`);
+          if (this.role === GameModel.role) {
+            if (Number(this.nPos) === 2) {
+              tmpResult.push(`${this.ePos}4`);
+            }
+          } else {
+            if (Number(this.nPos) === 7) {
+              tmpResult.push(`${this.ePos}5`);
+            }
           }
         }
 
+        if (this.role === GameModel.role) {
+          if (Number(this.nPos) === 5) {
+            if (selfEIdx - 1 >= 0) {
+              const nearChess = this.getChessFromPos(
+                `${eMap[selfEIdx - 1]}${this.nPos}`
+              );
+              if (
+                nearChess &&
+                nearChess.steps.length === 1 &&
+                nearChess.role !== this.role
+              ) {
+                tmpResult.push(`${eMap[selfEIdx - 1]}${Number(this.nPos) + 1}`);
+              }
+            }
+            if (selfEIdx + 1 < 8) {
+              const nearChess = this.getChessFromPos(
+                `${eMap[selfEIdx + 1]}${this.nPos}`
+              );
+              if (
+                nearChess &&
+                nearChess.steps.length === 1 &&
+                nearChess.role !== this.role
+              ) {
+                tmpResult.push(`${eMap[selfEIdx + 1]}${Number(this.nPos) + 1}`);
+              }
+            }
+          }
+        } else {
+          if (Number(this.nPos) === 4) {
+          }
+        }
         break;
     }
     this.validPath = tmpResult.slice();
@@ -629,7 +718,8 @@ export class ChessPiece extends Component {
     return (
       Board.instance.node
         .getChildByPath(`${n}/${e}`)
-        .getComponentInChildren(ChessPiece)?.role === GameModel.selectedRole
+        .getComponentInChildren(ChessPiece)?.role === GameModel.selectedRole &&
+      GameModel.selectedRole === GameModel.turnRole
     );
   }
 
@@ -639,5 +729,13 @@ export class ChessPiece extends Component {
         .getChildByPath(`${n}/${e}`)
         .getComponentInChildren(ChessPiece)?.role === GameModel.role
     );
+  }
+
+  private getChessFromPos(pos: string) {
+    const n = p2d(pos).n;
+    const e = p2d(pos).e;
+    return Board.instance.node
+      .getChildByPath(`${n}/${e}`)
+      .getComponentInChildren(ChessPiece);
   }
 }

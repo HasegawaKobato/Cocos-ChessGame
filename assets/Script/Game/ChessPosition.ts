@@ -1,6 +1,6 @@
 import { _decorator, Component, Node } from "cc";
 import Event, { EventType } from "./Event";
-import { ChessPiece } from "./ChessPiece";
+import { ChessPiece, p2d } from "./ChessPiece";
 import GameModel from "../Model/GameModel";
 const { ccclass, property } = _decorator;
 
@@ -18,10 +18,8 @@ export class ChessPosition extends Component {
   update(deltaTime: number) {}
 
   private onSelect() {
-    const canSelect = GameModel.isDebug
-      ? this.getComponentInChildren(ChessPiece) !== null
-      : this.getComponentInChildren(ChessPiece) &&
-        this.getComponentInChildren(ChessPiece).role === GameModel.role;
+    const canSelect =
+      this.getComponentInChildren(ChessPiece)?.role === GameModel.turnRole;
     if (canSelect) {
       Event.event.emit(EventType.CANCEL_SELECT, this.position);
     } else {

@@ -13,4 +13,5 @@ export default class GameModel {
   }
 
   public static selectedRole: RoleEnum = RoleEnum.A;
+  public static turnRole: RoleEnum = RoleEnum.A;
 }

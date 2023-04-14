@@ -150,6 +150,7 @@ export class Board extends Component {
         node.getComponent(ChessPiece).chessId = chessIdStrToEnum(d.id);
         node.getComponent(ChessPiece).role = GameModel.role;
         node.getComponent(ChessPiece).position = d.pos;
+        node.setPosition(Vec3.ZERO);
       });
       // 生成敵方方棋子
       initData.enemy.forEach((d) => {
@@ -159,6 +160,7 @@ export class Board extends Component {
         node.getComponent(ChessPiece).chessId = chessIdStrToEnum(d.id);
         node.getComponent(ChessPiece).role = GameModel.enemyRole;
         node.getComponent(ChessPiece).position = d.pos;
+        node.setPosition(Vec3.ZERO);
       });
     }, 0);
   }

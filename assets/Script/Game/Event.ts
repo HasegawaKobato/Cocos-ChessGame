@@ -5,7 +5,9 @@ export enum EventType {
   SHOW_VALIDPATH = "showValidPath",
   CANCEL_SELECT = "cancelSelect",
   KILLED = "killed",
-  SELECT_PAWN_CHANGE = "selectPawnChange"
+  SELECT_PAWN_CHANGE = "selectPawnChange",
+  GAME_OVER = "gameOver",
+  TURN = "turn",
 }
 
 export default class Event {
