@@ -1,7 +1,7 @@
 import { _decorator, Component, Node } from "cc";
 import Event, { EventType } from "./Event";
 import { ChessPiece, p2d } from "./ChessPiece";
-import GameModel from "../Model/GameModel";
+import GameModel, { GameState } from "../Model/GameModel";
 const { ccclass, property } = _decorator;
 
 @ccclass("ChessPosition")
@@ -18,6 +18,11 @@ export class ChessPosition extends Component {
   update(deltaTime: number) {}
 
   private onSelect() {
+    if (
+      (GameModel.gameState === GameState.AThinking && GameModel.isSelfCPU) ||
+      (GameModel.gameState === GameState.BThinking && GameModel.isEnemyCPU)
+    )
+      return;
     const canSelect =
       this.getComponentInChildren(ChessPiece)?.role === GameModel.turnRole;
     if (canSelect) {

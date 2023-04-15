@@ -8,11 +8,16 @@ import {
   Node,
   Sprite,
   SpriteFrame,
+  tween,
+  v3,
+  Vec3,
+  director,
+  Camera,
 } from "cc";
 import { Board } from "./Board";
 import Event, { EventType } from "./Event";
 import { ChessPosition } from "./ChessPosition";
-import GameModel, { RoleEnum } from "../Model/GameModel";
+import GameModel, { GameState, RoleEnum } from "../Model/GameModel";
 const { ccclass, property } = _decorator;
 
 export enum ChessIdEnum {
@@ -77,6 +82,9 @@ export class ChessPiece extends Component {
   @property(Node)
   private selectedNode: Node = null;
 
+  @property(Node)
+  private tmpMoveBoardNode: Node = null;
+
   @property(Sprite)
   private chessSprite: Sprite = null;
 
@@ -139,10 +147,10 @@ export class ChessPiece extends Component {
     return !this.isDead ? this.position.match(/\d/g)?.[0] : "";
   }
   private _validPath: string[] = [];
-  private get validPath(): string[] {
+  public get validPath(): string[] {
     return this._validPath;
   }
-  private set validPath(v: string[]) {
+  public set validPath(v: string[]) {
     this._validPath = v.slice();
     Event.event.emit(EventType.SHOW_VALIDPATH, v.slice());
   }
@@ -151,9 +159,6 @@ export class ChessPiece extends Component {
     this.node.on(Node.EventType.TOUCH_END, this.onSelectChess, this);
     Event.event.on(EventType.CLICK_POSITION, this.toPosition, this);
     Event.event.on(EventType.CANCEL_SELECT, this.onCancelSpecicSelect, this);
-  }
-
-  start() {
     this.selectedNode.active = false;
   }
 
@@ -161,6 +166,11 @@ export class ChessPiece extends Component {
 
   public onCancelSelect() {
     this.selectedNode.active = false;
+  }
+
+  public updateCalculatePath() {
+    GameModel.selectedRole = this.role;
+    this.calculateValidPath();
   }
 
   private onCancelSpecicSelect(position: string) {
@@ -187,6 +197,7 @@ export class ChessPiece extends Component {
           }`
         )
       );
+      this.node.position = Vec3.ZERO;
     }
   }
 
@@ -221,29 +232,37 @@ export class ChessPiece extends Component {
       this.role === GameModel.role ? Color.WHITE : Color.RED;
   }
 
-  private onSelectChess() {
+  public onSelectChess() {
     this.selectedNode.active = true;
     GameModel.selectedRole = this.role;
     this.calculateValidPath();
   }
 
-  private toPosition(target: string) {
+  private async toPosition(target: string) {
     if (this.selectedNode.active) {
-      if (this.validPath.includes(target) && this.role === GameModel.turnRole) {
-        let isOver = false;
+      const isValidPath = this.validPath.includes(target);
+      this.validPath = [];
+      if (isValidPath && this.role === GameModel.turnRole) {
+        this.validPath = [];
         if (!this.isSelfWithSelected(p2d(target).e, p2d(target).n)) {
           const enemyPiece = Board.instance.node
             .getChildByPath(`${p2d(target).n}/${p2d(target).e}`)
-            .getComponentInChildren(ChessPiece);
+            .getComponentsInChildren(ChessPiece)
+            .filter(
+              (chess) =>
+                chess.role ===
+                (GameModel.turnRole === RoleEnum.A ? RoleEnum.B : RoleEnum.A)
+            )?.[0];
           if (enemyPiece) {
             Event.event.emit(EventType.KILLED, this.role, enemyPiece.node);
 
             if (enemyPiece.chessId === ChessIdEnum.King) {
-              isOver = true;
+              GameModel.isGameOver = true;
               Event.event.emit(EventType.GAME_OVER, this.role);
             }
           }
         } else {
+          // 城王易位
           if (this.chessId === ChessIdEnum.King) {
             if (target === "g1") {
               if (
@@ -263,18 +282,15 @@ export class ChessPiece extends Component {
           }
         }
 
-        if (!isOver && this.chessId === ChessIdEnum.Pawn) {
-          if (this.role === GameModel.role && Number(this.nPos) === 8) {
-            Event.event.emit(EventType.SELECT_PAWN_CHANGE, this);
-          }
-
+        let pawnChanging = false;
+        if (!GameModel.isGameOver && this.chessId === ChessIdEnum.Pawn) {
           if (p2d(target).e !== this.ePos) {
             if (this.role === GameModel.role) {
               if (Number(this.nPos) === 5) {
                 const nearChess = this.getChessFromPos(
                   `${p2d(target).e}${this.nPos}`
                 );
-                if (nearChess) {
+                if (nearChess && nearChess.role !== this.role) {
                   Event.event.emit(EventType.KILLED, this.role, nearChess.node);
                 }
               }
@@ -283,21 +299,58 @@ export class ChessPiece extends Component {
                 const nearChess = this.getChessFromPos(
                   `${p2d(target).e}${this.nPos}`
                 );
-                if (nearChess) {
+                if (nearChess && nearChess.role !== this.role) {
                   Event.event.emit(EventType.KILLED, this.role, nearChess.node);
                 }
               }
             }
           }
+
+          if (
+            (this.role === GameModel.role && p2d(target).n === 8) ||
+            (this.role !== GameModel.role && p2d(target).n === 1)
+          ) {
+            pawnChanging = true;
+            Event.event.emit(EventType.SELECT_PAWN_CHANGE, this);
+          }
         }
 
-        GameModel.stepRecord.push(`${this.position}-${target}`);
-        this.position = target;
-        this.steps.push(target);
+        if (GameModel.turnRole === RoleEnum.A) {
+          GameModel.gameState = GameState.ARunning;
+        } else if (GameModel.turnRole === RoleEnum.B) {
+          GameModel.gameState = GameState.BRunning;
+        }
+        await new Promise((res, rej) => {
+          this.selectedNode.active = false;
+          this.node.setParent(
+            this.tmpMoveBoardNode.getChildByPath(`${this.nPos}/${this.ePos}`)
+          );
+          tween(this.node)
+            .by(0.3, {
+              position: v3(
+                ("abcdefgh".indexOf(p2d(target).e) -
+                  "abcdefgh".indexOf(this.ePos)) *
+                  80,
+                ("12345678".indexOf(`${p2d(target).n}`) -
+                  "12345678".indexOf(this.nPos)) *
+                  80,
+                0
+              ),
+            })
+            .call(() => {
+              GameModel.stepRecord.push(`${this.position}-${target}`);
+              this.node.setParent(Board.instance.node);
+              this.position = target;
+              this.steps.push(target);
+              res(null);
+            })
+            .start();
+        });
 
-        Event.event.emit(EventType.TURN);
+        if (!pawnChanging && !GameModel.isGameOver) {
+          Event.event.emit(EventType.TURN);
+        }
       }
-      this.validPath = [];
     }
     this.selectedNode.active = false;
   }
@@ -346,8 +399,8 @@ export class ChessPiece extends Component {
         if (this.steps.length === 0) {
           if (!this.getChessFromPos("f1") && !this.getChessFromPos("g1")) {
             if (
-              this.getChessFromPos("h1").chessId === ChessIdEnum.Rook &&
-              this.getChessFromPos("h1").steps.length === 0
+              this.getChessFromPos("h1")?.chessId === ChessIdEnum.Rook &&
+              this.getChessFromPos("h1")?.steps.length === 0
             ) {
               tmpResult.push("g1");
             }
@@ -357,8 +410,8 @@ export class ChessPiece extends Component {
             !this.getChessFromPos("d1")
           ) {
             if (
-              this.getChessFromPos("a1").chessId === ChessIdEnum.Rook &&
-              this.getChessFromPos("a1").steps.length === 0
+              this.getChessFromPos("a1")?.chessId === ChessIdEnum.Rook &&
+              this.getChessFromPos("a1")?.steps.length === 0
             ) {
               tmpResult.push("c1");
             }
@@ -682,14 +735,17 @@ export class ChessPiece extends Component {
           });
         }
 
+        // 第一動可以走兩格
         if (!tmpPawnStops) {
           if (this.role === GameModel.role) {
             if (Number(this.nPos) === 2) {
-              tmpResult.push(`${this.ePos}4`);
+              if (!this.getChessFromPos(`${this.ePos}4`))
+                tmpResult.push(`${this.ePos}4`);
             }
           } else {
             if (Number(this.nPos) === 7) {
-              tmpResult.push(`${this.ePos}5`);
+              if (!this.getChessFromPos(`${this.ePos}5`))
+                tmpResult.push(`${this.ePos}5`);
             }
           }
         }

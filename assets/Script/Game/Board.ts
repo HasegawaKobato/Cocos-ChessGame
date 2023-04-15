@@ -22,7 +22,7 @@ import {
   p2d,
 } from "./ChessPiece";
 import Event, { EventType } from "./Event";
-import GameModel, { RoleEnum } from "../Model/GameModel";
+import GameModel, { GameState, RoleEnum } from "../Model/GameModel";
 const { ccclass, property, executeInEditMode } = _decorator;
 
 interface IChessData {
@@ -91,6 +91,7 @@ export class Board extends Component {
     this.getComponentsInChildren(Sprite).forEach(
       (c) => (c.customMaterial = null)
     );
+    if (v.length === 0) return;
     v.forEach((path) => {
       this.node
         .getChildByPath(`${p2d(path).n}/${p2d(path).e}`)
@@ -164,6 +165,7 @@ export class Board extends Component {
         node.getComponent(ChessPiece).isDead = false;
         node.setPosition(Vec3.ZERO);
       });
+      GameModel.gameState = GameState.ATurn;
     }, 0);
   }
 

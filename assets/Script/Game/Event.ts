@@ -8,6 +8,7 @@ export enum EventType {
   SELECT_PAWN_CHANGE = "selectPawnChange",
   GAME_OVER = "gameOver",
   TURN = "turn",
+  GAMESTATE_CHANGE = "gameStateChange"
 }
 
 export default class Event {

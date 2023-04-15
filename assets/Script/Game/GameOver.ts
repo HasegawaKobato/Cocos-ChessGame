@@ -8,7 +8,7 @@ import {
   LabelOutline,
   Node,
 } from "cc";
-import GameModel, { RoleEnum } from "../Model/GameModel";
+import GameModel, { GameState, RoleEnum } from "../Model/GameModel";
 import { Board } from "./Board";
 const { ccclass, property } = _decorator;
 
@@ -42,6 +42,12 @@ export class GameOver extends Component {
         this.resultLabel.getComponent(LabelOutline).color = Color.BLACK;
         break;
     }
+
+    setTimeout(() => {
+      if (GameModel.isEnemyCPU && GameModel.isSelfCPU) {
+        this.onClickRestart();
+      }
+    }, 1000);
   }
 
   public close() {
@@ -51,6 +57,7 @@ export class GameOver extends Component {
   private onClickRestart() {
     Board.instance.initBoard = true;
     GameModel.turnRole = RoleEnum.A;
+    GameModel.isGameOver = false;
     this.close();
   }
 }
