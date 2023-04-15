@@ -4,9 +4,6 @@ export enum RoleEnum {
 }
 
 export default class GameModel {
-  // TODO: true的時候， 沒辦法吃子
-  public static isDebug: boolean = false;
-
   public static role: RoleEnum = RoleEnum.A;
   public static get enemyRole(): RoleEnum {
     return GameModel.role === RoleEnum.A ? RoleEnum.B : RoleEnum.A;
@@ -14,4 +11,6 @@ export default class GameModel {
 
   public static selectedRole: RoleEnum = RoleEnum.A;
   public static turnRole: RoleEnum = RoleEnum.A;
+  /** ${from pos}-${to pos} */
+  public static stepRecord: string[] = [];
 }

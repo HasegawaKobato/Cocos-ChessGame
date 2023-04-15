@@ -150,6 +150,7 @@ export class Board extends Component {
         node.getComponent(ChessPiece).chessId = chessIdStrToEnum(d.id);
         node.getComponent(ChessPiece).role = GameModel.role;
         node.getComponent(ChessPiece).position = d.pos;
+        node.getComponent(ChessPiece).isDead = false;
         node.setPosition(Vec3.ZERO);
       });
       // 生成敵方方棋子
@@ -160,6 +161,7 @@ export class Board extends Component {
         node.getComponent(ChessPiece).chessId = chessIdStrToEnum(d.id);
         node.getComponent(ChessPiece).role = GameModel.enemyRole;
         node.getComponent(ChessPiece).position = d.pos;
+        node.getComponent(ChessPiece).isDead = false;
         node.setPosition(Vec3.ZERO);
       });
     }, 0);
@@ -169,6 +171,7 @@ export class Board extends Component {
     node.setParent(
       role === RoleEnum.A ? this.selfDeadNode : this.enemyDeadNode
     );
+    node.getComponent(ChessPiece).isDead = true;
     this.enemyDeadNode.getComponent(Layout).updateLayout();
     this.selfDeadNode.getComponent(Layout).updateLayout();
   }

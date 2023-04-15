@@ -8,6 +8,7 @@ import {
   LabelOutline,
   Node,
 } from "cc";
+import GameModel, { RoleEnum } from "../Model/GameModel";
 import { Board } from "./Board";
 const { ccclass, property } = _decorator;
 
@@ -49,6 +50,7 @@ export class GameOver extends Component {
 
   private onClickRestart() {
     Board.instance.initBoard = true;
+    GameModel.turnRole = RoleEnum.A;
     this.close();
   }
 }
