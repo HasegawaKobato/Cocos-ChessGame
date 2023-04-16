@@ -8,8 +8,8 @@ import {
   LabelOutline,
   Node,
 } from "cc";
-import GameModel, { GameState, RoleEnum } from "../Model/GameModel";
-import { Board } from "./Board";
+import GameModel from "../Model/GameModel";
+import Event, { EventType } from "./Event";
 const { ccclass, property } = _decorator;
 
 @ccclass("GameOver")
@@ -55,9 +55,7 @@ export class GameOver extends Component {
   }
 
   private onClickRestart() {
-    Board.instance.initBoard = true;
-    GameModel.turnRole = RoleEnum.A;
-    GameModel.isGameOver = false;
+    Event.event.emit(EventType.RESTART);
     this.close();
   }
 }

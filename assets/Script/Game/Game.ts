@@ -24,6 +24,7 @@ export class Game extends Component {
     Event.event.on(EventType.GAME_OVER, this.onGameOver, this);
     Event.event.on(EventType.TURN, this.onTurn, this);
     Event.event.on(EventType.GAMESTATE_CHANGE, this.onGameStateChanged, this);
+    Event.event.on(EventType.RESTART, this.onRestart, this);
   }
 
   start() {
@@ -98,6 +99,12 @@ export class Game extends Component {
       EventType.CLICK_POSITION,
       usableChess[targetChessIdx].validPath[targetActionIdx]
     );
+  }
+
+  private onRestart() {
+    Board.instance.initBoard = true;
+    GameModel.turnRole = RoleEnum.A;
+    GameModel.isGameOver = false;
   }
 
   private waitFor(seconds: number) {
